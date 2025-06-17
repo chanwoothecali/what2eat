@@ -2,10 +2,7 @@
 import streamlit as st
 import pandas as pd
 from openai import OpenAI
-
-@st.cache_data
-def load_data():
-    return pd.read_csv("sinchon_restaurants.csv")
+from sheets import load_restaurant_data
 
 def is_food_related(question):
     food_keywords = [
@@ -54,16 +51,29 @@ def ask_gpt(user_question, df):
     return response.choices[0].message.content.strip()
 
 def show_chatbot():
-    df = load_data()
+    df = load_restaurant_data()
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
+
     if "awaiting_response" not in st.session_state:
         st.session_state.awaiting_response = False
 
     st.title("🍜 신촌 맛집 추천 챗봇")
     st.markdown("신촌 근처에서 뭐 먹을지 고민될 때 물어보세요!")
 
+    # ✅ 첫 자동 추천 메시지 (세션에 메시지 없고, 취향 정보 있을 경우)
+    if not st.session_state.messages and st.session_state.food_category:
+        preferred = ", ".join(st.session_state.food_category)
+        
+        # 👉 사용자 취향 기반으로 GPT 추천 받기
+        intro_question = f"{preferred} 계열 음식을 좋아하는 사람에게 신촌에서 어떤 맛집을 추천해줄 수 있을까?"
+        answer = ask_gpt(intro_question, df)
+        
+        greeting = f"안녕하세요 {st.session_state.user_id}님, 반가워요! 🎉\n\n오늘은 이런 곳 어떠세요?\n\n{answer}"
+        st.session_state.messages.append({"role": "assistant", "content": greeting})
+
+    # 채팅창 출력
     for msg in st.session_state.messages:
         with st.chat_message("user" if msg["role"] == "user" else "assistant"):
             st.markdown(msg["content"])
