@@ -23,7 +23,7 @@ LLM 기반 자연어 이해와 간단한 데이터 기반 필터링을 통해, �
 ### 1. 저장소 클론
 
 ```bash
-git clone https://github.com/your-username/what2eat.git
+git clone https://github.com/chanwoothecali/what2eat.git
 cd what2eat
 ```
 
