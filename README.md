@@ -54,7 +54,7 @@ api_key = "your-api-key-here"
 ### 5. 앱 실행
 
 ```bash
-streamlit run sample.py
+streamlit run recommend.py
 ```
 
 ---
