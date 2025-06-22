@@ -3,11 +3,12 @@ import streamlit as st
 import pandas as pd
 from openai import OpenAI
 from sheets import load_restaurant_data
+from sheets import update_feedback_count
 
 def is_food_related(question):
     food_keywords = [
         "맛집", "추천", "식당", "먹을", "밥", "점심", "저녁", "한끼", "혼밥", "배고파",
-        "뭐 먹", "파스타", "라멘", "카레", "김밥", "떡볶이", "술집", "치킨", "고기", "메뉴", "소주", "맥주"
+        "뭐 먹", "파스타", "라멘", "카레", "김밥", "떡볶이", "술집", "치킨", "고기", "메뉴", "소주", "맥주", "땡기"
     ]
     return any(keyword in question for keyword in food_keywords)
 
@@ -72,6 +73,9 @@ def show_chatbot():
         
         greeting = f"안녕하세요 {st.session_state.user_id}님, 반가워요! 🎉\n\n오늘은 이런 곳 어떠세요?\n\n{answer}"
         st.session_state.messages.append({"role": "assistant", "content": greeting})
+        
+        st.session_state["feedback_ready"] = True 
+
 
     # 채팅창 출력
     for msg in st.session_state.messages:
@@ -92,3 +96,46 @@ def show_chatbot():
             st.session_state.messages.append({"role": "assistant", "content": answer})
             st.session_state.awaiting_response = False
             st.rerun()
+
+    if (
+        "messages" in st.session_state
+        and len(st.session_state.messages) >= 2
+    ):
+        last_msg = st.session_state.messages[-1]
+        prev_msg = st.session_state.messages[-2]
+
+        if (
+            last_msg["role"] == "assistant"
+            and prev_msg["role"] == "user"
+            and is_food_related(prev_msg["content"])
+        ):
+            st.markdown("---")
+            st.markdown("이 추천은 어땠나요?")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("👍 좋아요"):
+                    update_feedback_count("like")
+                    st.success("좋아요 평가 감사합니다! 🙏")
+
+            with col2:
+                if st.button("👎 별로에요"):
+                    update_feedback_count("dislike")
+                    st.success("피드백 감사합니다! 더 나은 추천에 반영할게요!")
+
+    if st.session_state.get("feedback_ready", False):
+        st.markdown("---")
+        st.markdown("이 추천은 어땠나요?")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("👍 좋아요"):
+                update_feedback_count("like")
+                st.success("좋아요 평가 감사합니다! 🙏")
+                st.session_state["feedback_ready"] = False
+
+        with col2:
+            if st.button("👎 별로에요"):
+                update_feedback_count("dislike")
+                st.success("피드백 감사합니다! 더 나은 추천에 반영할게요!")
+                st.session_state["feedback_ready"] = False
